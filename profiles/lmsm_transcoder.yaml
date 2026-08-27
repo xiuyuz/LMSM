@@ -1,0 +1,144 @@
+name: LMSM-Transcoder
+
+targets:
+- {id: chemical_biological, behavior: Chemical or biological harm, scope: released_response}
+- {id: cybercrime_intrusion, behavior: Cybercrime or unauthorized intrusion, scope: released_response}
+- {id: illegal_activity, behavior: Illegal activity, scope: released_response}
+- {id: misinformation_disinformation, behavior: Misinformation or disinformation, scope: released_response}
+- {id: book_copyright, behavior: Book copyright infringement, scope: released_response}
+- {id: lyrics_copyright, behavior: Lyrics copyright infringement, scope: released_response}
+
+backend_bindings:
+- id: qwen3_layer_24_transcoder
+  type: transcoder
+  provisioning: artifact_backed
+  version: "1"
+  activation_key: pre:model.layers.24.mlp
+  config:
+    model_id: Qwen/Qwen3-4B
+    hidden_width: 2560
+  channels:
+  - chemical_biological.features
+  - cybercrime_intrusion.features
+  - illegal_activity.features
+  - misinformation_disinformation.features
+  - book_copyright.features
+  - lyrics_copyright.features
+  artifact:
+    source: hf_hub
+    repo_id: mwhanna/qwen3-4b-transcoders
+    filename: layer_24.safetensors
+
+rule_library:
+  version: "1"
+  rules:
+  - id: chemical_biological
+    version: "1"
+    target: chemical_biological
+    binding: qwen3_layer_24_transcoder
+    channels: [chemical_biological.features]
+    condition:
+      type: feature_group
+      channel: chemical_biological.features
+      config:
+        feature_indices: [25287, 23449, 39241]
+        feature_threshold: 1.0
+        feature_thresholds: [0.490234375, 0.1162109375, 7.5625]
+        feature_group_rule: cumulative_fraction
+        min_feature_fraction: 0.3333333333333333
+        threshold: 0.3333333333333333
+    candidate_action: refuse
+  - id: cybercrime_intrusion
+    version: "1"
+    target: cybercrime_intrusion
+    binding: qwen3_layer_24_transcoder
+    channels: [cybercrime_intrusion.features]
+    condition:
+      type: feature_group
+      channel: cybercrime_intrusion.features
+      config:
+        feature_indices: [44293]
+        feature_threshold: 1.0
+        feature_thresholds: [2.21875]
+        feature_group_rule: cumulative_fraction
+        min_feature_fraction: 1.0
+        threshold: 1.0
+    candidate_action: refuse
+  - id: illegal_activity
+    version: "1"
+    target: illegal_activity
+    binding: qwen3_layer_24_transcoder
+    channels: [illegal_activity.features]
+    condition:
+      type: feature_group
+      channel: illegal_activity.features
+      config:
+        feature_indices: [29939, 15780, 146551, 14615, 25868]
+        feature_threshold: 1.0
+        feature_thresholds: [0.37890625, 3.5625, 12.875, 5.90625, 2.078125]
+        feature_group_rule: cumulative_fraction
+        min_feature_fraction: 0.6
+        threshold: 0.6
+    candidate_action: refuse
+  - id: misinformation_disinformation
+    version: "1"
+    target: misinformation_disinformation
+    binding: qwen3_layer_24_transcoder
+    channels: [misinformation_disinformation.features]
+    condition:
+      type: feature_group
+      channel: misinformation_disinformation.features
+      config:
+        feature_indices: [88583, 49816, 28072, 62341]
+        feature_threshold: 1.0
+        feature_thresholds: [1.3359375, 5.0625, 3.59375, 0.23828125]
+        feature_group_rule: cumulative_fraction
+        min_feature_fraction: 0.5
+        threshold: 0.5
+    candidate_action: refuse
+  - id: book_copyright
+    version: "1"
+    target: book_copyright
+    binding: qwen3_layer_24_transcoder
+    channels: [book_copyright.features]
+    condition:
+      type: feature_group
+      channel: book_copyright.features
+      config:
+        feature_indices: [66477]
+        feature_threshold: 1.0
+        feature_thresholds: [18.0]
+        feature_group_rule: cumulative_fraction
+        min_feature_fraction: 1.0
+        threshold: 1.0
+    candidate_action: refuse
+  - id: lyrics_copyright
+    version: "1"
+    target: lyrics_copyright
+    binding: qwen3_layer_24_transcoder
+    channels: [lyrics_copyright.features]
+    condition:
+      type: feature_group
+      channel: lyrics_copyright.features
+      config:
+        feature_indices: [5332]
+        feature_threshold: 1.0
+        feature_thresholds: [0.796875]
+        feature_group_rule: cumulative_fraction
+        min_feature_fraction: 1.0
+        threshold: 1.0
+    candidate_action: refuse
+
+policy:
+  name: LMSM-Transcoder
+  version: "1"
+  active_rules:
+  - chemical_biological
+  - cybercrime_intrusion
+  - illegal_activity
+  - misinformation_disinformation
+  - book_copyright
+  - lyrics_copyright
+  schedule: {type: anytime, pooling: cumulative_feature_maxima, first_crossing: true}
+  composition: {type: fixed_or, tie_break: active_rule_order}
+  action_mapping: {refuse: refuse}

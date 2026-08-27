@@ -1,0 +1,43 @@
+name: Selected-Coordinate Transcoder Backend Monitor
+
+targets:
+- id: transcoder_coordinate_observation
+  behavior: Selected Qwen transcoder coordinate
+  scope: monitor_only
+
+backend_bindings:
+- id: qwen_layer_24_transcoder_coordinate
+  type: transcoder
+  provisioning: artifact_backed
+  version: "1"
+  activation_key: pre:model.layers.24.mlp
+  channels: [transcoder.coordinate_43497]
+  artifact:
+    source: hf_hub
+    repo_id: mwhanna/qwen3-4b-transcoders
+    filename: layer_24.safetensors
+  config:
+    feature_indices: [43497]
+    threshold: 0.1
+
+rule_library:
+  version: "1"
+  rules:
+  - id: observe_transcoder_coordinate
+    version: "1"
+    target: transcoder_coordinate_observation
+    binding: qwen_layer_24_transcoder_coordinate
+    channels: [transcoder.coordinate_43497]
+    condition:
+      type: feature_group
+      channel: transcoder.coordinate_43497
+      config: {threshold: 1.0}
+    candidate_action: observe
+
+policy:
+  name: Monitor-Only
+  version: "1"
+  active_rules: [observe_transcoder_coordinate]
+  schedule: {type: anytime}
+  composition: {type: fixed_or, tie_break: active_rule_order}
+  action_mapping: {observe: allow}

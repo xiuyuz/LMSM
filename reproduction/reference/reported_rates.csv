@@ -1,0 +1,10 @@
+arm,benchmark,metric,numerator,denominator,rate
+Matched Disabled,HarmBench,ASR,236,602,0.3920265780730897
+LMSM-Checkpoint,HarmBench,ASR,20,602,0.03322259136212625
+LMSM-Anytime,HarmBench,ASR,41,602,0.0681063122923588
+Matched Disabled,WildJailbreak,ASR,838,2000,0.419
+LMSM-Checkpoint,WildJailbreak,ASR,147,2000,0.0735
+LMSM-Anytime,WildJailbreak,ASR,120,2000,0.06
+Matched Disabled,XSTest-safe,FRR,6,250,0.024
+LMSM-Checkpoint,XSTest-safe,FRR,11,250,0.044
+LMSM-Anytime,XSTest-safe,FRR,14,250,0.056

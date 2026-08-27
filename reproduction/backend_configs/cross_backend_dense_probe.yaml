@@ -1,0 +1,42 @@
+name: Task-Fitted Dense Probe Monitor
+
+targets:
+- id: chemical_biological_observation
+  behavior: Chemical or biological content
+  scope: monitor_only
+
+backend_bindings:
+- id: chemical_biological_dense_probe
+  type: dense_probe
+  provisioning: task_fitted
+  version: "1"
+  activation_key: pre:model.layers.24.mlp
+  channels: [chemical_biological.probe_score]
+  report_path: reproduction/backend_configs/parameters/cross_backend_dense_probe.json
+  artifact:
+    categories: [chemical_biological]
+  config:
+    feature_indices: [0]
+    threshold: 4.7204853206317345
+
+rule_library:
+  version: "1"
+  rules:
+  - id: observe_chemical_biological_probe
+    version: "1"
+    target: chemical_biological_observation
+    binding: chemical_biological_dense_probe
+    channels: [chemical_biological.probe_score]
+    condition:
+      type: feature_group
+      channel: chemical_biological.probe_score
+      config: {threshold: 1.0}
+    candidate_action: observe
+
+policy:
+  name: Monitor-Only
+  version: "1"
+  active_rules: [observe_chemical_biological_probe]
+  schedule: {type: anytime}
+  composition: {type: fixed_or, tie_break: active_rule_order}
+  action_mapping: {observe: allow}

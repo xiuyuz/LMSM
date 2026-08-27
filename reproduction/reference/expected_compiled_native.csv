@@ -1,0 +1,3 @@
+max_num_seqs,configuration,measurement_count,median_model_tokens_per_second,iqr_model_tokens_per_second,speedup_vs_eager_native
+1,Compiled Native,5,204.97427730119622,0.42691331661339404,2.3757459635329456
+32,Compiled Native,5,5543.39740494979,3.099289694997424,2.06558020997488

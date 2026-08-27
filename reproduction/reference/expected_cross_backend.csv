@@ -1,0 +1,3 @@
+backend,prompts,model_tokens_per_prompt,median_batched_backend_evaluations,finite_score_rows,minimum_backend_score,maximum_backend_score,actions,median_model_tokens_per_second,iqr_model_tokens_per_second
+Task-fitted dense probe,32,64,64.0,32,2.079962730407715,20.040924072265625,0,2439.9639900541065,3.7020870529031527
+Selected-coordinate transcoder,32,64,64.0,32,0.0,10.4375,0,2487.6276877807504,2.8849475985093704

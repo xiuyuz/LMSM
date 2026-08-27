@@ -1,0 +1,87 @@
+victim_model:
+  id: Qwen/Qwen3-4B
+  tokenizer_id: Qwen/Qwen3-4B
+  enable_thinking: true
+
+judges:
+  harmful_response:
+    id: meta-llama/Llama-Guard-3-8B
+    protocol: first_token_safe_unsafe_logprob_argmax
+    temperature: 0.0
+    max_tokens: 1
+    dtype: bfloat16
+  refusal:
+    id: allenai/wildguard
+    protocol: response_refusal_field
+    temperature: 0.0
+    max_tokens: 32
+    max_input_tokens: 16384
+
+sources:
+  harmbench:
+    repository: https://github.com/seanie12/ThinkSafe.git
+    file: dataset/eval/harmbench.json
+    expected_rows: 602
+  wildjailbreak:
+    dataset: allenai/wildjailbreak
+    configuration: eval
+    split: train
+    data_type: adversarial_harmful
+    expected_rows: 2000
+  xstest:
+    repository: https://github.com/paul-rottger/xstest.git
+    file: xstest_prompts.csv
+    label: safe
+    expected_rows: 250
+
+generation:
+  harmbench:
+    input: harmbench_602.jsonl
+    sampling: nucleus
+    temperature: 0.6
+    top_p: 0.95
+    top_k: 20
+    max_new_tokens: 16384
+    max_model_len: 40960
+    max_num_seqs: 32
+    max_num_batched_tokens: 40960
+    gpu_memory_utilization: 0.8
+    mode: eager
+    seed: 0
+  wildjailbreak:
+    input: wildjailbreak_harmful_2000.jsonl
+    sampling: nucleus
+    temperature: 0.6
+    top_p: 0.95
+    top_k: 20
+    max_new_tokens: 16384
+    max_model_len: 40960
+    max_num_seqs: 32
+    max_num_batched_tokens: 40960
+    gpu_memory_utilization: 0.8
+    mode: eager
+    seed: 0
+  xstest:
+    input: xstest_safe_250.jsonl
+    sampling: greedy
+    max_new_tokens: 512
+    max_model_len: 16384
+    max_num_seqs: 32
+    max_num_batched_tokens: 32768
+    gpu_memory_utilization: 0.8
+    mode: eager
+    seed_base: 1000000
+
+arms:
+  matched_disabled:
+    label: Matched Disabled
+    profile: profiles/lmsm_checkpoint.yaml
+    observe_only: true
+  lmsm_checkpoint:
+    label: LMSM-Checkpoint
+    profile: profiles/lmsm_checkpoint.yaml
+    observe_only: false
+  lmsm_anytime:
+    label: LMSM-Anytime
+    profile: profiles/lmsm_anytime.yaml
+    observe_only: false

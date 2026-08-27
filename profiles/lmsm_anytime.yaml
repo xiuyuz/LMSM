@@ -1,0 +1,87 @@
+name: LMSM-Anytime
+
+targets:
+- {id: chemical_biological, behavior: Chemical or biological harm, scope: released_response}
+- {id: cybercrime_intrusion, behavior: Cybercrime or unauthorized intrusion, scope: released_response}
+- {id: drugs_controlled_substances, behavior: Controlled-substance harm, scope: released_response}
+- {id: copyright, behavior: Copyright infringement, scope: released_response}
+- {id: misinformation_disinformation, behavior: Misinformation or disinformation, scope: released_response}
+- {id: defamation, behavior: Defamation, scope: released_response}
+- {id: hate_discrimination, behavior: Hate or discrimination, scope: released_response}
+- {id: harassment_bullying, behavior: Harassment or bullying, scope: released_response}
+- {id: fraud_deception, behavior: Fraud or deception, scope: released_response}
+- {id: illegal_goods_services, behavior: Illegal goods or services, scope: released_response}
+- {id: violence_physical_harm, behavior: Violence or physical harm, scope: released_response}
+- {id: sexual_abuse_exploitation, behavior: Sexual abuse or exploitation, scope: released_response}
+- {id: self_harm, behavior: Self-harm, scope: released_response}
+- {id: privacy_sensitive_information, behavior: Privacy or sensitive-information abuse, scope: released_response}
+- {id: general_dangerous_harm, behavior: General dangerous harm, scope: released_response}
+
+backend_bindings:
+- id: dense_probe
+  type: dense_probe
+  provisioning: task_fitted
+  version: "1"
+  activation_key: pre:model.layers.24.mlp
+  report_path: profiles/parameters/lmsm_anytime.json
+  config:
+    model_id: Qwen/Qwen3-4B
+    hidden_width: 2560
+  channels:
+  - chemical_biological.margin
+  - cybercrime_intrusion.margin
+  - drugs_controlled_substances.margin
+  - copyright.margin
+  - misinformation_disinformation.margin
+  - defamation.margin
+  - hate_discrimination.margin
+  - harassment_bullying.margin
+  - fraud_deception.margin
+  - illegal_goods_services.margin
+  - violence_physical_harm.margin
+  - sexual_abuse_exploitation.margin
+  - self_harm.margin
+  - privacy_sensitive_information.margin
+  - general_dangerous_harm.margin
+
+rule_library:
+  version: "1"
+  rules:
+  - {id: chemical_biological, version: "1", target: chemical_biological, binding: dense_probe, channels: [chemical_biological.margin], condition: {type: calibrated_margin, channel: chemical_biological.margin, calibration_key: chemical_biological}, candidate_action: refuse}
+  - {id: cybercrime_intrusion, version: "1", target: cybercrime_intrusion, binding: dense_probe, channels: [cybercrime_intrusion.margin], condition: {type: calibrated_margin, channel: cybercrime_intrusion.margin, calibration_key: cybercrime_intrusion}, candidate_action: refuse}
+  - {id: drugs_controlled_substances, version: "1", target: drugs_controlled_substances, binding: dense_probe, channels: [drugs_controlled_substances.margin], condition: {type: calibrated_margin, channel: drugs_controlled_substances.margin, calibration_key: drugs_controlled_substances}, candidate_action: refuse}
+  - {id: copyright, version: "1", target: copyright, binding: dense_probe, channels: [copyright.margin], condition: {type: calibrated_margin, channel: copyright.margin, calibration_key: copyright}, candidate_action: refuse}
+  - {id: misinformation_disinformation, version: "1", target: misinformation_disinformation, binding: dense_probe, channels: [misinformation_disinformation.margin], condition: {type: calibrated_margin, channel: misinformation_disinformation.margin, calibration_key: misinformation_disinformation}, candidate_action: refuse}
+  - {id: defamation, version: "1", target: defamation, binding: dense_probe, channels: [defamation.margin], condition: {type: calibrated_margin, channel: defamation.margin, calibration_key: defamation}, candidate_action: refuse}
+  - {id: hate_discrimination, version: "1", target: hate_discrimination, binding: dense_probe, channels: [hate_discrimination.margin], condition: {type: calibrated_margin, channel: hate_discrimination.margin, calibration_key: hate_discrimination}, candidate_action: refuse}
+  - {id: harassment_bullying, version: "1", target: harassment_bullying, binding: dense_probe, channels: [harassment_bullying.margin], condition: {type: calibrated_margin, channel: harassment_bullying.margin, calibration_key: harassment_bullying}, candidate_action: refuse}
+  - {id: fraud_deception, version: "1", target: fraud_deception, binding: dense_probe, channels: [fraud_deception.margin], condition: {type: calibrated_margin, channel: fraud_deception.margin, calibration_key: fraud_deception}, candidate_action: refuse}
+  - {id: illegal_goods_services, version: "1", target: illegal_goods_services, binding: dense_probe, channels: [illegal_goods_services.margin], condition: {type: calibrated_margin, channel: illegal_goods_services.margin, calibration_key: illegal_goods_services}, candidate_action: refuse}
+  - {id: violence_physical_harm, version: "1", target: violence_physical_harm, binding: dense_probe, channels: [violence_physical_harm.margin], condition: {type: calibrated_margin, channel: violence_physical_harm.margin, calibration_key: violence_physical_harm}, candidate_action: refuse}
+  - {id: sexual_abuse_exploitation, version: "1", target: sexual_abuse_exploitation, binding: dense_probe, channels: [sexual_abuse_exploitation.margin], condition: {type: calibrated_margin, channel: sexual_abuse_exploitation.margin, calibration_key: sexual_abuse_exploitation}, candidate_action: refuse}
+  - {id: self_harm, version: "1", target: self_harm, binding: dense_probe, channels: [self_harm.margin], condition: {type: calibrated_margin, channel: self_harm.margin, calibration_key: self_harm}, candidate_action: refuse}
+  - {id: privacy_sensitive_information, version: "1", target: privacy_sensitive_information, binding: dense_probe, channels: [privacy_sensitive_information.margin], condition: {type: calibrated_margin, channel: privacy_sensitive_information.margin, calibration_key: privacy_sensitive_information}, candidate_action: refuse}
+  - {id: general_dangerous_harm, version: "1", target: general_dangerous_harm, binding: dense_probe, channels: [general_dangerous_harm.margin], condition: {type: calibrated_margin, channel: general_dangerous_harm.margin, calibration_key: general_dangerous_harm}, candidate_action: refuse}
+
+policy:
+  name: LMSM-Anytime
+  version: "1"
+  active_rules:
+  - chemical_biological
+  - cybercrime_intrusion
+  - drugs_controlled_substances
+  - copyright
+  - misinformation_disinformation
+  - defamation
+  - hate_discrimination
+  - harassment_bullying
+  - fraud_deception
+  - illegal_goods_services
+  - violence_physical_harm
+  - sexual_abuse_exploitation
+  - self_harm
+  - privacy_sensitive_information
+  - general_dangerous_harm
+  schedule: {type: anytime, pooling: running_prefix_mean, first_crossing: true}
+  composition: {type: fixed_or, tie_break: active_rule_order}
+  action_mapping: {refuse: refuse}

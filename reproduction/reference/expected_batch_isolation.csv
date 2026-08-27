@@ -1,0 +1,2 @@
+request_count,action_count,no_action_count,duplicate_pair_count,duplicate_pair_decision_exact_count,duplicate_pair_threshold_crossing_exact_count,duplicate_pair_margin_certified_count,duplicate_pair_margin_not_certified_count,slot_reuse_count,movement_count,removal_count,all_new_requests_initialized_empty,status
+64,24,40,32,32,32,31,1,32,23,8,True,passed

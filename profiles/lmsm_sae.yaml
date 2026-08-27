@@ -1,0 +1,144 @@
+name: LMSM-SAE
+
+targets:
+- {id: chemical_biological, behavior: Chemical or biological harm, scope: released_response}
+- {id: cybercrime_intrusion, behavior: Cybercrime or unauthorized intrusion, scope: released_response}
+- {id: illegal_activity, behavior: Illegal activity, scope: released_response}
+- {id: misinformation_disinformation, behavior: Misinformation or disinformation, scope: released_response}
+- {id: book_copyright, behavior: Book copyright infringement, scope: released_response}
+- {id: lyrics_copyright, behavior: Lyrics copyright infringement, scope: released_response}
+
+backend_bindings:
+- id: gemma_scope_sae
+  type: sae
+  provisioning: artifact_backed
+  version: "1"
+  activation_key: model.language_model.layers.22
+  config:
+    model_id: google/gemma-3-4b-it
+    hidden_width: 2560
+  channels:
+  - chemical_biological.features
+  - cybercrime_intrusion.features
+  - illegal_activity.features
+  - misinformation_disinformation.features
+  - book_copyright.features
+  - lyrics_copyright.features
+  artifact:
+    source: hf
+    release: gemma-scope-2-4b-it-res
+    sae_id: layer_22_width_262k_l0_medium
+
+rule_library:
+  version: "1"
+  rules:
+  - id: chemical_biological
+    version: "1"
+    target: chemical_biological
+    binding: gemma_scope_sae
+    channels: [chemical_biological.features]
+    condition:
+      type: feature_group
+      channel: chemical_biological.features
+      config:
+        feature_indices: [6681, 13810, 24218, 7074]
+        feature_threshold: 1.0
+        feature_thresholds: [450.0650329589844, 233.44338989257812, 303.9464416503906, 1458.8687744140625]
+        feature_group_rule: cumulative_fraction
+        min_feature_fraction: 0.75
+        threshold: 0.75
+    candidate_action: refuse
+  - id: cybercrime_intrusion
+    version: "1"
+    target: cybercrime_intrusion
+    binding: gemma_scope_sae
+    channels: [cybercrime_intrusion.features]
+    condition:
+      type: feature_group
+      channel: cybercrime_intrusion.features
+      config:
+        feature_indices: [51489, 68223]
+        feature_threshold: 1.0
+        feature_thresholds: [301.3700866699219, 231.80169677734375]
+        feature_group_rule: cumulative_fraction
+        min_feature_fraction: 0.5
+        threshold: 0.5
+    candidate_action: refuse
+  - id: illegal_activity
+    version: "1"
+    target: illegal_activity
+    binding: gemma_scope_sae
+    channels: [illegal_activity.features]
+    condition:
+      type: feature_group
+      channel: illegal_activity.features
+      config:
+        feature_indices: [542, 4964, 20395]
+        feature_threshold: 1.0
+        feature_thresholds: [473.61322021484375, 1082.739990234375, 314.9058837890625]
+        feature_group_rule: cumulative_fraction
+        min_feature_fraction: 0.6666666666666666
+        threshold: 0.6666666666666666
+    candidate_action: refuse
+  - id: misinformation_disinformation
+    version: "1"
+    target: misinformation_disinformation
+    binding: gemma_scope_sae
+    channels: [misinformation_disinformation.features]
+    condition:
+      type: feature_group
+      channel: misinformation_disinformation.features
+      config:
+        feature_indices: [8633, 11056, 212973, 112822]
+        feature_threshold: 1.0
+        feature_thresholds: [582.9880981445312, 611.2312622070312, 268.3076171875, 318.1142272949219]
+        feature_group_rule: cumulative_fraction
+        min_feature_fraction: 0.5
+        threshold: 0.5
+    candidate_action: refuse
+  - id: book_copyright
+    version: "1"
+    target: book_copyright
+    binding: gemma_scope_sae
+    channels: [book_copyright.features]
+    condition:
+      type: feature_group
+      channel: book_copyright.features
+      config:
+        feature_indices: [222799]
+        feature_threshold: 1.0
+        feature_thresholds: [620.438720703125]
+        feature_group_rule: cumulative_fraction
+        min_feature_fraction: 1.0
+        threshold: 1.0
+    candidate_action: refuse
+  - id: lyrics_copyright
+    version: "1"
+    target: lyrics_copyright
+    binding: gemma_scope_sae
+    channels: [lyrics_copyright.features]
+    condition:
+      type: feature_group
+      channel: lyrics_copyright.features
+      config:
+        feature_indices: [120912]
+        feature_threshold: 1.0
+        feature_thresholds: [560.1005249023438]
+        feature_group_rule: cumulative_fraction
+        min_feature_fraction: 1.0
+        threshold: 1.0
+    candidate_action: refuse
+
+policy:
+  name: LMSM-SAE
+  version: "1"
+  active_rules:
+  - chemical_biological
+  - cybercrime_intrusion
+  - illegal_activity
+  - misinformation_disinformation
+  - book_copyright
+  - lyrics_copyright
+  schedule: {type: anytime, pooling: cumulative_feature_maxima, first_crossing: true}
+  composition: {type: fixed_or, tie_break: active_rule_order}
+  action_mapping: {refuse: refuse}
