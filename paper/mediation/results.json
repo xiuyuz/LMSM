@@ -1,0 +1,131 @@
+{
+ "association": {
+  "probes": {
+   "runs": 14,
+   "requests": 23856,
+   "association_errors": 0,
+   "fewest_slot_reuses": 1576,
+   "runs_with_chunked_prefill_and_prefix_caching": 4
+  },
+  "released_artifacts": {
+   "runs": 8,
+   "valid_runs": 8,
+   "requests": 13632,
+   "association_errors": 0
+  },
+  "requests": 37488
+ },
+ "duplicate_pairs": {
+  "batch_invariant": {
+   "runs": 7,
+   "pairs": 5964,
+   "identical": 5964
+  },
+  "default_kernels": {
+   "runs": 7,
+   "differing_pct": [
+    0.8215962441314554,
+    6.338028169014085
+   ]
+  }
+ },
+ "ablation": {
+  "anytime/control/burst": {
+   "control_states": [
+    "completed"
+   ]
+  },
+  "anytime/rowkey_reset/burst": {
+   "requests": 1704,
+   "used_another_requests_state": 19,
+   "failed_closed": 0,
+   "decisions_changed": 0,
+   "harmbench_refusals_released": 0
+  },
+  "anytime/rowkey_noreset/burst": {
+   "requests": 1704,
+   "used_another_requests_state": 1672,
+   "failed_closed": 0,
+   "decisions_changed": 904,
+   "harmbench_refusals_released": 878
+  },
+  "anytime/control/staggered": {
+   "control_states": [
+    "completed"
+   ]
+  },
+  "anytime/rowkey_reset/staggered": {
+   "requests": 1704,
+   "used_another_requests_state": 532,
+   "failed_closed": 0,
+   "decisions_changed": 158,
+   "harmbench_refusals_released": 102
+  },
+  "anytime/rowkey_noreset/staggered": {
+   "requests": 1704,
+   "used_another_requests_state": 1677,
+   "failed_closed": 0,
+   "decisions_changed": 908,
+   "harmbench_refusals_released": 881
+  },
+  "checkpoint/control/burst": {
+   "control_states": [
+    "completed"
+   ]
+  },
+  "checkpoint/rowkey_reset/burst": {
+   "requests": 1704,
+   "used_another_requests_state": 0,
+   "failed_closed": 6,
+   "decisions_changed": 0,
+   "harmbench_refusals_released": 0
+  },
+  "checkpoint/rowkey_noreset/burst": {
+   "requests": 1704,
+   "used_another_requests_state": 0,
+   "failed_closed": 1672,
+   "decisions_changed": 0,
+   "harmbench_refusals_released": 0
+  },
+  "checkpoint/control/staggered": {
+   "control_states": [
+    "completed"
+   ]
+  },
+  "checkpoint/rowkey_reset/staggered": {
+   "requests": 1704,
+   "used_another_requests_state": 0,
+   "failed_closed": 291,
+   "decisions_changed": 0,
+   "harmbench_refusals_released": 0
+  },
+  "checkpoint/rowkey_noreset/staggered": {
+   "requests": 1704,
+   "used_another_requests_state": 0,
+   "failed_closed": 1686,
+   "decisions_changed": 0,
+   "harmbench_refusals_released": 0
+  }
+ },
+ "contract": {
+  "refused_at_startup": 11,
+  "refused_runs_without_outputs": 11,
+  "capture_removed": 384,
+  "capture_removed_failed_closed": 384,
+  "observation_dropped": 32,
+  "observation_dropped_failed_closed": 32,
+  "other_requests_completed": true,
+  "device_vs_host": 128,
+  "device_vs_host_same": 128,
+  "failed_requests": 416,
+  "failed_requests_fixed_refusal": 416
+ },
+ "not_reached": {
+  "requests": 5704,
+  "mismatches": 0
+ },
+ "released_as_decided": {
+  "requests": 7668,
+  "mismatches": 0
+ }
+}

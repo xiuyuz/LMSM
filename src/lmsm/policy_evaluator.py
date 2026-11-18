@@ -1,4 +1,11 @@
-"""Request-keyed policy evaluators for built-in LMSM schedules."""
+"""Request-keyed policy evaluators for built-in LMSM schedules.
+
+Every evaluator also records, per request, the first step at which a value it
+computed for the decision (a pooled mean, a probe or fusion score, a feature
+activation) was NaN or infinite (``nonfinite_step_for``).  This record does
+not change any decision or state.  The serving runtime fails such a request
+closed instead of acting on non-finite evidence.
+"""
 
 from __future__ import annotations
 
@@ -11,6 +18,7 @@ import torch
 
 from lmsm.backends.dense_probe import CheckpointRule, DenseProbe
 from lmsm.control_plane import DeploymentProfile
+from lmsm.execution_contract import ExecutionRequirements, ObservationWindow
 from lmsm.state import Decision
 
 
@@ -36,12 +44,14 @@ class AnytimePolicyEvaluator:
         self.actions_by_id: dict[str, dict[str, bool]] = {}
         self.hidden_sums_by_id: dict[str, np.ndarray] = {}
         self.hidden_counts_by_id: dict[str, int] = {}
+        self.nonfinite_steps: dict[str, int] = {}
 
     def add(self, request_id: str) -> None:
         self.max_scores_by_id[request_id] = {}
         self.max_steps_by_id[request_id] = {}
         self.actions_by_id[request_id] = {}
         self.hidden_counts_by_id[request_id] = 0
+        self.nonfinite_steps.pop(request_id, None)
 
     def remove(self, request_id: str) -> None:
         self.max_scores_by_id.pop(request_id, None)
@@ -49,10 +59,31 @@ class AnytimePolicyEvaluator:
         self.actions_by_id.pop(request_id, None)
         self.hidden_sums_by_id.pop(request_id, None)
         self.hidden_counts_by_id.pop(request_id, None)
+        self.nonfinite_steps.pop(request_id, None)
+
+    def nonfinite_step_for(self, request_id: str) -> int | None:
+        """First step whose pooled mean or a probe score was NaN or infinite."""
+
+        return self.nonfinite_steps.get(request_id)
 
     def needs_prompt(self, request_id: str) -> bool:
         del request_id
         return False
+
+    def execution_requirements(self) -> ExecutionRequirements:
+        """Every processed generated token, evaluated after every decode step."""
+
+        return ExecutionRequirements.for_profile(
+            self.profile,
+            windows=(ObservationWindow("decode", 1, None),),
+            evaluation_steps=None,
+            coverage=(
+                "every processed generated token until the first threshold "
+                "crossing; the final generated token is never processed, so it "
+                "is released unevaluated; a request that finishes on its first "
+                "generated token reaches no evaluation point"
+            ),
+        )
 
     def scores_for(self, request_id: str) -> dict[str, float]:
         return dict(self.max_scores_by_id.get(request_id, {}))
@@ -89,8 +120,13 @@ class AnytimePolicyEvaluator:
 
         hidden = pooled.astype(np.float64)
         scores = {probe.target_id: probe.score(hidden) for probe in self.probes}
+        finite = np.isfinite(pooled).all(axis=1)
+        for values in scores.values():
+            finite &= np.isfinite(values)
         decisions = []
         for row, (request_id, step) in enumerate(zip(request_ids, steps, strict=True)):
+            if not finite[row]:
+                self.nonfinite_steps.setdefault(request_id, step)
             maxima = self.max_scores_by_id[request_id]
             max_steps = self.max_steps_by_id[request_id]
             action_state = self.actions_by_id[request_id]
@@ -153,6 +189,7 @@ class CheckpointPolicyEvaluator:
         self.window_2_sums_by_id: dict[str, np.ndarray] = {}
         self.window_1_counts_by_id: dict[str, int] = {}
         self.window_2_counts_by_id: dict[str, int] = {}
+        self.nonfinite_steps: dict[str, int] = {}
 
     def add(self, request_id: str) -> None:
         self.prompt_scores_by_id[request_id] = {}
@@ -165,6 +202,7 @@ class CheckpointPolicyEvaluator:
         }
         self.window_1_counts_by_id[request_id] = 0
         self.window_2_counts_by_id[request_id] = 0
+        self.nonfinite_steps.pop(request_id, None)
 
     def remove(self, request_id: str) -> None:
         self.prompt_evaluated.discard(request_id)
@@ -179,11 +217,43 @@ class CheckpointPolicyEvaluator:
             self.window_2_sums_by_id,
             self.window_1_counts_by_id,
             self.window_2_counts_by_id,
+            self.nonfinite_steps,
         ):
             store.pop(request_id, None)
 
     def needs_prompt(self, request_id: str) -> bool:
         return request_id not in self.prompt_evaluated
+
+    def nonfinite_step_for(self, request_id: str) -> int | None:
+        """First step whose pooled mean, probe score or fusion score was not finite."""
+
+        return self.nonfinite_steps.get(request_id)
+
+    def execution_requirements(self) -> ExecutionRequirements:
+        """The prompt and both decode windows, with one evaluation point."""
+
+        split = self.window_split_step
+        return ExecutionRequirements.for_profile(
+            self.profile,
+            windows=(
+                ObservationWindow("prompt", 0, 0),
+                ObservationWindow(f"steps_1_{split}", 1, split),
+                ObservationWindow(
+                    f"steps_{split + 1}_{self.max_decode_step}",
+                    split + 1,
+                    self.max_decode_step,
+                ),
+            ),
+            evaluation_steps=(self.evaluation_step,),
+            coverage=(
+                f"evaluated once, in the step that processes generated token "
+                f"{self.evaluation_step}; an action replaces token "
+                f"{self.evaluation_step + 1}; tokens after "
+                f"{self.evaluation_step} are not evaluated (policy choice); a "
+                f"request that finishes before token {self.evaluation_step} is "
+                "processed reaches no evaluation point"
+            ),
+        )
 
     def scores_for(self, request_id: str) -> dict[str, dict[str, float]]:
         return {
@@ -260,6 +330,8 @@ class CheckpointPolicyEvaluator:
             self.prompt_scores_by_id[request_id][rule.target_id] = float(
                 rule.prompt.score(hidden)
             )
+        if not _all_finite(list(self.prompt_scores_by_id[request_id].values())):
+            self.nonfinite_steps.setdefault(request_id, 0)
         return _allow()
 
     def _score_window_1(self, request_id: str) -> None:
@@ -275,6 +347,8 @@ class CheckpointPolicyEvaluator:
             self.window_1_scores_by_id[request_id][rule.target_id] = float(
                 rule.steps_1_32.score(hidden)
             )
+        if not _all_finite(hidden, list(self.window_1_scores_by_id[request_id].values())):
+            self.nonfinite_steps.setdefault(request_id, self.window_split_step)
 
     def _score_window_2_and_fuse(self, request_id: str) -> Decision:
         expected_count = self.evaluation_step - self.window_split_step
@@ -307,6 +381,12 @@ class CheckpointPolicyEvaluator:
                     self.evaluation_step
                 )
                 triggered.append((rule, components, fusion_score))
+        if not _all_finite(
+            hidden,
+            list(self.window_2_scores_by_id[request_id].values()),
+            list(self.fusion_scores_by_id[request_id].values()),
+        ):
+            self.nonfinite_steps.setdefault(request_id, self.evaluation_step)
 
         if not triggered or not self.actions_enabled:
             return _allow()
@@ -345,6 +425,7 @@ class SharedFeaturePolicyEvaluator:
         self.profile = profile
         self.backends_by_id: dict[str, list[Any]] = {}
         self.feature_maxima_by_id: dict[str, dict[str, dict[int, float]]] = {}
+        self.nonfinite_steps: dict[str, int] = {}
 
     def add(self, request_id: str) -> None:
         backends = []
@@ -354,14 +435,38 @@ class SharedFeaturePolicyEvaluator:
             backends.append(backend)
         self.backends_by_id[request_id] = backends
         self.feature_maxima_by_id[request_id] = {}
+        self.nonfinite_steps.pop(request_id, None)
 
     def remove(self, request_id: str) -> None:
         self.backends_by_id.pop(request_id, None)
         self.feature_maxima_by_id.pop(request_id, None)
+        self.nonfinite_steps.pop(request_id, None)
+
+    def nonfinite_step_for(self, request_id: str) -> int | None:
+        """First step whose selected feature activations were not all finite."""
+
+        return self.nonfinite_steps.get(request_id)
 
     def needs_prompt(self, request_id: str) -> bool:
         del request_id
         return True
+
+    def execution_requirements(self) -> ExecutionRequirements:
+        """The prompt and every processed generated token, each evaluated."""
+
+        return ExecutionRequirements.for_profile(
+            self.profile,
+            windows=(
+                ObservationWindow("prompt", 0, 0),
+                ObservationWindow("decode", 1, None),
+            ),
+            evaluation_steps=None,
+            coverage=(
+                "the prompt and every processed generated token until the first "
+                "crossing, each evaluated; the final generated token is never "
+                "processed; the prompt evaluation is always reached"
+            ),
+        )
 
     def feature_maxima_for(self, request_id: str) -> dict[str, dict[int, float]]:
         return {
@@ -389,7 +494,6 @@ class SharedFeaturePolicyEvaluator:
         activations: torch.Tensor,
         steps: list[int],
     ) -> list[Decision]:
-        del steps
         draft = SimpleNamespace(
             activations={self.shared_backend.activation_key: activations.unsqueeze(1)}
         )
@@ -399,6 +503,8 @@ class SharedFeaturePolicyEvaluator:
             signals = []
             for backend in self.backends_by_id[request_id]:
                 feature_scores = snapshot.scores(backend.feature_indices, row=row)
+                if not _all_finite(feature_scores):
+                    self.nonfinite_steps.setdefault(request_id, int(steps[row]))
                 maxima = self.feature_maxima_by_id[request_id].setdefault(
                     backend.category, {}
                 )
@@ -420,6 +526,14 @@ def _float64_hidden(activations: torch.Tensor) -> np.ndarray:
         .to(device="cpu", dtype=torch.float32)
         .numpy()
         .astype(np.float64)
+    )
+
+
+def _all_finite(*values: Any) -> bool:
+    """True when every value (a number, a list, or an array) is finite."""
+
+    return all(
+        bool(np.isfinite(np.asarray(value, dtype=np.float64)).all()) for value in values
     )
 
 

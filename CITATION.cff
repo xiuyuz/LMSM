@@ -1,0 +1,45 @@
+cff-version: 1.2.0
+message: "If you use LMSM, please cite the paper below."
+title: "LMSM: Language Model Security Modules"
+type: software
+version: 0.2.0
+license: MIT
+repository-code: "https://github.com/xiuyuz/LMSM"
+authors:
+  - given-names: XiuYu
+    family-names: Zhang
+    affiliation: National University of Singapore
+  - given-names: Bonan
+    family-names: Ruan
+    affiliation: National University of Singapore
+  - given-names: Junfeng
+    family-names: Fang
+    affiliation: National University of Singapore
+  - given-names: An
+    family-names: Zhang
+    affiliation: University of Science and Technology of China
+  - given-names: Tat-Seng
+    family-names: Chua
+    affiliation: National University of Singapore
+  - given-names: Zhenkai
+    family-names: Liang
+    affiliation: National University of Singapore
+preferred-citation:
+  type: article
+  title: "Language Model Security Modules: Turning LLM Interpretability into Runtime Defense"
+  authors:
+    - given-names: XiuYu
+      family-names: Zhang
+    - given-names: Bonan
+      family-names: Ruan
+    - given-names: Junfeng
+      family-names: Fang
+    - given-names: An
+      family-names: Zhang
+    - given-names: Tat-Seng
+      family-names: Chua
+    - given-names: Zhenkai
+      family-names: Liang
+  journal: "arXiv preprint arXiv:2608.25697"
+  year: 2026
+  url: "https://arxiv.org/abs/2608.25697"

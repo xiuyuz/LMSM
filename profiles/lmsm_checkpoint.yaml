@@ -90,3 +90,4 @@ policy:
     max_decode_step: 64
   composition: {type: fixed_or, tie_break: active_rule_order}
   action_mapping: {refuse: refuse}
+  execution: {not_reached: allow_with_record}

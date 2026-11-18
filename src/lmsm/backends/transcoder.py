@@ -1,13 +1,10 @@
 """Transcoder interpretability backend.
 
-Transcoders (e.g. mwhanna/qwen3-4b-transcoders) differ from SAEs conceptually:
-- SAE: reconstructs the residual stream (input approx decode(encode(input)))
-- Transcoder: predicts MLP output from MLP input (output approx decode(encode(mlp_input)))
-
-Both expose the same linear encode interface, so TranscoderBackend is a thin
-named subclass of SAEBackend. Having a distinct class name keeps the "SAE
-backend" and "transcoder backend" visibly separate in logs and configuration
-about backend modularity.
+An SAE reconstructs its input, such as the residual stream.  A transcoder, such
+as mwhanna/qwen3-4b-transcoders, predicts an MLP's output from the MLP's input.
+Both expose the same linear encode, so TranscoderBackend is a named subclass of
+SAEBackend.  The separate name shows in logs and profiles which kind of
+artifact a backend uses.
 """
 from __future__ import annotations
 
@@ -17,6 +14,6 @@ from lmsm.backends.sae import SAEBackend
 class TranscoderBackend(SAEBackend):
     """Produce safety signals from transcoder feature activations.
 
-    Identical logic to SAEBackend; the distinct name clarifies which artifact
-    type is in use when inspecting engine state or reading logs.
+    The logic is SAEBackend's.  The separate name shows in engine state and
+    logs which kind of artifact is in use.
     """

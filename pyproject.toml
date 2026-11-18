@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lmsm"
-version = "0.1.0"
+version = "0.2.0"
 description = "Pluggable model-internal backends, policy evaluation, and output mediation for LLM serving"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -13,13 +13,12 @@ dependencies = ["PyYAML>=6.0", "huggingface_hub>=0.20", "numpy>=1.26", "torch>=2
 
 [project.urls]
 Repository = "https://github.com/xiuyuz/LMSM"
-Paper = "http://arxiv.org/abs/2608.25697"
+Paper = "https://arxiv.org/abs/2608.25697"
 
 [project.optional-dependencies]
-hf = ["transformers>=4.40", "safetensors>=0.7"]
+hf = ["transformers>=4.40", "safetensors>=0.7", "accelerate>=0.26"]
 vllm = ["vllm==0.19.0"]
 sae = ["sae-lens>=6.0"]
-viz = ["matplotlib>=3.7"]
 dev = ["pytest>=8.0"]
 
 [tool.setuptools]

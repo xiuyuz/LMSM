@@ -89,6 +89,9 @@ class PolicyBundle:
     schedule: Schedule
     composition: Composition
     action_mapping: ActionMapping
+    # Execution contract: release when a request finishes before its first
+    # evaluation point ("allow_with_record" or "deny").
+    not_reached_disposition: str = "allow_with_record"
 
     def compose(self, candidate_rule_ids: list[str]) -> str | None:
         """Select a candidate using this bundle's declared rule order."""

@@ -1,0 +1,9 @@
+# The 15 fitted Checkpoint probe rules and all six released-transcoder rules as one policy (lmsm.composition).
+# Each member keeps its own targets, binding, rules, schedule and evaluator.  The rules are deny-only and combine
+# with fixed OR.  A tie goes to the rule listed first, and probe rules are listed before transcoder rules.  Both
+# members read pre:model.layers.24.mlp of Qwen3-4B, so the runtime keeps one capture.
+name: LMSM-Composed-All
+version: "1"
+compose:
+- {name: probe, profile: lmsm_checkpoint.yaml}
+- {name: transcoder, profile: lmsm_transcoder.yaml}

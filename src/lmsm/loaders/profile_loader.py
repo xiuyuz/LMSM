@@ -19,6 +19,10 @@ from lmsm.control_plane import (
     Schedule,
     Target,
 )
+from lmsm.execution_contract import (
+    ALLOW_WITH_RECORD,
+    validate_not_reached_disposition,
+)
 
 
 def _mapping(value: Any) -> dict[str, Any]:
@@ -93,6 +97,7 @@ def load_profile(path: str | Path) -> DeploymentProfile:
     policy_payload = payload["policy"]
     schedule_payload = policy_payload["schedule"]
     composition_payload = policy_payload.get("composition", {})
+    execution_payload = _mapping(policy_payload.get("execution"))
     policy = PolicyBundle(
         name=str(policy_payload["name"]),
         version=str(policy_payload["version"]),
@@ -118,6 +123,9 @@ def load_profile(path: str | Path) -> DeploymentProfile:
                 str(candidate): str(action)
                 for candidate, action in policy_payload["action_mapping"].items()
             }
+        ),
+        not_reached_disposition=validate_not_reached_disposition(
+            execution_payload.get("not_reached", ALLOW_WITH_RECORD)
         ),
     )
 

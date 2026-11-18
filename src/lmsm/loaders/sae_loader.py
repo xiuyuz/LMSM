@@ -5,11 +5,10 @@ from pathlib import Path
 
 
 class LinearTranscoderAdapter:
-    """Minimal encode/decode wrapper for Neuronpedia skip-transcoder checkpoints.
+    """Encode and decode wrapper for Neuronpedia skip-transcoder checkpoints.
 
-    This is sufficient for backend-only runs, where LMSM needs feature
-    activations via encode(...). decode(...) is included for interface parity,
-    but does not currently apply the residual skip path.
+    LMSM needs only the feature activations from ``encode``.  ``decode`` exists
+    for interface parity and does not apply the residual skip path.
     """
 
     def __init__(self, *, W_enc, b_enc, W_dec, b_dec, W_skip=None):

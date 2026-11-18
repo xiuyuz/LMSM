@@ -1,0 +1,6 @@
+# Test profile: the composed policy with the transcoder rules inactive.  It must reproduce LMSM-Checkpoint exactly.
+name: LMSM-Composed-Check-Probe
+version: "1"
+compose:
+- {name: probe, profile: lmsm_checkpoint.yaml}
+- {name: transcoder, profile: lmsm_transcoder.yaml, active_rules: []}
